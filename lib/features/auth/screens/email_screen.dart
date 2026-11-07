@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:teleforge_fe/app/theme/app_colors.dart';
+import 'package:teleforge_fe/core/network/api_exceptions.dart';
+import 'package:teleforge_fe/features/auth/services/auth_service.dart';
 import 'package:teleforge_fe/features/auth/screens/otp_screen.dart';
 import 'package:teleforge_fe/shared/widgets/app_scaffold.dart';
 
 class EmailScreen extends StatefulWidget {
-  const EmailScreen({super.key});
+  const EmailScreen({
+    required this.authService,
+    required this.onAuthenticated,
+    super.key,
+  });
+
+  final AuthService authService;
+  final Future<void> Function() onAuthenticated;
 
   @override
   State<EmailScreen> createState() => _EmailScreenState();
@@ -17,6 +26,7 @@ class _EmailScreenState extends State<EmailScreen> {
   final _passwordController = TextEditingController();
   bool _isRegister = false;
   bool _hidePassword = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -28,18 +38,57 @@ class _EmailScreenState extends State<EmailScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_isRegister) {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => OtpScreen(email: _emailController.text.trim()),
-        ),
-      );
-      return;
+    setState(() => _isSubmitting = true);
+    try {
+      final email = _emailController.text.trim();
+      if (_isRegister) {
+        await widget.authService.register(
+          fullName: _nameController.text.trim(),
+          email: email,
+          password: _passwordController.text,
+        );
+        if (mounted) await _openOtp(email);
+      } else {
+        final authenticated = await widget.authService.login(
+          email: email,
+          password: _passwordController.text,
+        );
+        if (!mounted) return;
+        if (authenticated) {
+          await _finishAuthentication();
+        } else {
+          await _openOtp(email);
+        }
+      }
+    } on ApiException catch (error) {
+      _showError(error.message);
+    } on FormatException catch (error) {
+      _showError(error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('برای ورود واقعی، اتصال سرور API لازم است.'),
+  }
+
+  Future<void> _openOtp(String email) => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => OtpScreen(
+        email: email,
+        authService: widget.authService,
+        onAuthenticated: _finishAuthentication,
       ),
+    ),
+  );
+
+  Future<void> _finishAuthentication() async {
+    await widget.onAuthenticated();
+    if (mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -191,14 +240,14 @@ class _EmailScreenState extends State<EmailScreen> {
                     icon: _isRegister
                         ? Icons.mark_email_read_outlined
                         : Icons.login_rounded,
-                    onPressed: _submit,
+                    onPressed: _isSubmitting ? null : _submit,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 17),
             const Text(
-              'پیش‌نمایش UI؛ ورود و ارسال کد OTP پس از اتصال API فعال می‌شود.',
+              'کد تأیید برای ایمیل ثبت‌شده ارسال می‌شود.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.muted, fontSize: 11),
             ),

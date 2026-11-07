@@ -1,30 +1,144 @@
 import 'package:flutter/material.dart';
 import 'package:teleforge_fe/app/theme/app_colors.dart';
+import 'package:teleforge_fe/core/config/api_config.dart';
+import 'package:teleforge_fe/core/network/api_client.dart';
+import 'package:teleforge_fe/core/network/api_exceptions.dart';
+import 'package:teleforge_fe/core/storage/token_storage.dart';
+import 'package:teleforge_fe/features/auth/services/auth_service.dart';
 import 'package:teleforge_fe/features/auth/screens/email_screen.dart';
 import 'package:teleforge_fe/features/bots/models/bot.dart';
 import 'package:teleforge_fe/features/bots/screens/add_bot_screen.dart';
 import 'package:teleforge_fe/features/bots/screens/bot_detail_screen.dart';
 import 'package:teleforge_fe/features/bots/screens/bots_screen.dart';
+import 'package:teleforge_fe/features/bots/services/bot_service.dart';
 import 'package:teleforge_fe/features/commands/models/bot_command.dart';
 import 'package:teleforge_fe/features/commands/screens/command_form_screen.dart';
 import 'package:teleforge_fe/features/commands/screens/commands_screen.dart';
+import 'package:teleforge_fe/features/commands/services/command_service.dart';
 import 'package:teleforge_fe/features/home/screens/home_screen.dart';
 import 'package:teleforge_fe/features/profile/screens/profile_screen.dart';
 import 'package:teleforge_fe/shared/widgets/app_scaffold.dart';
 
 class TeleForgeShell extends StatefulWidget {
-  const TeleForgeShell({super.key});
+  const TeleForgeShell({this.tokenStorage, this.apiClient, super.key});
+
+  final TokenStorage? tokenStorage;
+  final ApiClient? apiClient;
 
   @override
   State<TeleForgeShell> createState() => _TeleForgeShellState();
 }
 
 class _TeleForgeShellState extends State<TeleForgeShell> {
+  late final TokenStorage _tokenStorage =
+      widget.tokenStorage ?? const TokenStorage();
+  late final ApiClient _apiClient =
+      widget.apiClient ?? ApiClient(tokenStorage: _tokenStorage);
+  late final AuthService _authService = AuthService(
+    apiClient: _apiClient,
+    tokenStorage: _tokenStorage,
+  );
+  late final BotService _botService = BotService(_apiClient);
+  late final CommandService _commandService = CommandService(_apiClient);
+
   int _selectedTab = 0;
   int? _selectedBotId;
-  int _nextBotId = 1;
-  int _nextCommandId = 1;
   List<Bot> _bots = [];
+  bool _isAuthenticated = false;
+  bool _isLoading = true;
+  String? _profileName;
+  String? _profileEmail;
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      final hasSession = await _authService.hasSession();
+      if (!mounted) return;
+      if (!hasSession) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      setState(() => _isAuthenticated = true);
+      await _loadDashboard();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (error.statusCode == 401) _isAuthenticated = false;
+        _loadError = error.statusCode == 401
+            ? 'نشست شما منقضی شده است. دوباره وارد حساب شو.'
+            : error.message;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadDashboard() async {
+    if (!_isAuthenticated) return;
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+    try {
+      final dashboard = await _apiClient.get(ApiConfig.dashboard);
+      final profile = dashboard['profile'];
+      final rawBots = dashboard['user_bot_list'];
+      if (profile is! Map<String, dynamic> || rawBots is! List) {
+        throw const ApiException(
+          'Dashboard response must contain profile and user_bot_list.',
+        );
+      }
+      final bots = <Bot>[];
+      for (final rawBot in rawBots) {
+        if (rawBot is! Map<String, dynamic>) {
+          throw const ApiException('Dashboard contains an invalid bot record.');
+        }
+        final bot = Bot.fromJson(rawBot);
+        if (bot.serverId == null) {
+          throw const ApiException(
+            'Bot responses must include the Django database id as "id".',
+          );
+        }
+        bots.add(bot);
+      }
+      final hydrated = await Future.wait(
+        bots.map((bot) async {
+          if (bot.serverId == null) return bot;
+          return _botService.loadBot(bot);
+        }),
+      );
+      if (!mounted) return;
+      setState(() {
+        _bots = hydrated;
+        _profileName = profile['full_name'] as String?;
+        _profileEmail = profile['email'] as String?;
+        _isLoading = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.message;
+        _isLoading = false;
+      });
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.message;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _completeAuthentication() async {
+    if (!mounted) return;
+    setState(() => _isAuthenticated = true);
+    await _loadDashboard();
+  }
 
   void _updateBot(Bot updated) {
     setState(() {
@@ -33,23 +147,33 @@ class _TeleForgeShellState extends State<TeleForgeShell> {
   }
 
   Future<void> _addBot() async {
-    final bot = await Navigator.of(context)
-        .push<Bot>(MaterialPageRoute(builder: (_) => const AddBotScreen()));
-    if (bot == null) return;
-    setState(() {
-      _bots = [
-        ..._bots,
-        Bot(id: _nextBotId++, name: bot.name, username: bot.username),
-      ];
-    });
+    if (!_isAuthenticated) {
+      await _openSignIn();
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) =>
+            AddBotScreen(botService: _botService, onBotAdded: _loadDashboard),
+      ),
+    );
   }
 
   Future<void> _openBot(Bot bot) async {
+    if (bot.serverId == null) {
+      _showError(
+        const ApiException(
+          'The backend did not include this bot database id. Update its serializer to include "id".',
+        ),
+      );
+      return;
+    }
     _selectedBotId = bot.id;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => BotDetailScreen(
           bot: bot,
+          botService: _botService,
           onBotChanged: _updateBot,
           onAddCommand: () => _editCommand(bot),
           onOpenCommands: () {
@@ -62,34 +186,94 @@ class _TeleForgeShellState extends State<TeleForgeShell> {
   }
 
   Future<BotCommand?> _editCommand(Bot bot, {BotCommand? command}) async {
+    if (!_isAuthenticated) return null;
+    if (bot.serverId == null) {
+      _showError(
+        const ApiException(
+          'Bot responses must include the Django database id as "id".',
+        ),
+      );
+      return null;
+    }
+    if (command != null && command.serverId == null) {
+      _showError(
+        const ApiException(
+          'Command responses must include the Django database id as "id".',
+        ),
+      );
+      return null;
+    }
     final edited = await Navigator.of(context).push<BotCommand>(
       MaterialPageRoute(
         builder: (_) => CommandFormScreen(bot: bot, command: command),
       ),
     );
     if (edited == null) return null;
-    final existing = bot.commands.indexWhere((item) => item.id == edited.id);
-    final commands = [...bot.commands];
-    late final BotCommand saved;
-    if (existing < 0) {
-      saved = BotCommand(
-        id: _nextCommandId++,
-        name: edited.name,
-        description: edited.description,
-        response: edited.response,
-      );
-      commands.add(saved);
-    } else {
-      commands[existing] = edited;
-      saved = edited;
+    try {
+      if (command == null) {
+        await _commandService.addCommand(bot, edited);
+      } else {
+        await _commandService.updateCommand(bot, edited);
+      }
+      final refreshed = await _botService.loadBot(bot);
+      _updateBot(refreshed);
+      return refreshed.commands
+          .where((item) => item.name == edited.name)
+          .firstOrNull;
+    } on ApiException catch (error) {
+      _showError(error);
+      return null;
     }
-    _updateBot(bot.copyWith(commands: commands));
-    return saved;
   }
 
   Future<void> _openSignIn() async {
-    await Navigator.of(context)
-        .push<void>(MaterialPageRoute(builder: (_) => const EmailScreen()));
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => EmailScreen(
+          authService: _authService,
+          onAuthenticated: _completeAuthentication,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await _authService.logout();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAuthenticated = false;
+          _bots = [];
+          _profileName = null;
+          _profileEmail = null;
+          _loadError = null;
+        });
+      }
+    }
+  }
+
+  void _showError(ApiException error) {
+    if (error.statusCode == 401 && mounted) {
+      setState(() {
+        _isAuthenticated = false;
+        _bots = [];
+        _profileName = null;
+        _profileEmail = null;
+      });
+    }
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(error.message)));
+  }
+
+  Future<void> _runAction(Future<void> Function() action) async {
+    try {
+      await action();
+    } on ApiException catch (error) {
+      _showError(error);
+    } on FormatException catch (error) {
+      _showError(ApiException(error.message));
+    }
   }
 
   @override
@@ -111,7 +295,13 @@ class _TeleForgeShellState extends State<TeleForgeShell> {
         onAddCommand: (bot) => _editCommand(bot),
         onEditCommand: (bot, command) => _editCommand(bot, command: command),
       ),
-      ProfileScreen(onSignIn: _openSignIn),
+      ProfileScreen(
+        onSignIn: _openSignIn,
+        onSignOut: _isAuthenticated ? () => _runAction(_signOut) : null,
+        isAuthenticated: _isAuthenticated,
+        name: _profileName,
+        email: _profileEmail,
+      ),
     ];
 
     final destinations = const [
@@ -172,13 +362,35 @@ class _TeleForgeShellState extends State<TeleForgeShell> {
                 final contentWidth = constraints.maxWidth > 1440
                     ? 1440.0
                     : constraints.maxWidth;
-                return Align(
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: contentWidth,
-                    height: constraints.maxHeight,
-                    child: IndexedStack(index: _selectedTab, children: pages),
-                  ),
+                return Column(
+                  children: [
+                    if (_loadError != null)
+                      MaterialBanner(
+                        content: Text(_loadError!),
+                        actions: [
+                          TextButton(
+                            onPressed: _isAuthenticated
+                                ? () => _runAction(_loadDashboard)
+                                : null,
+                            child: const Text('تلاش دوباره'),
+                          ),
+                        ],
+                      ),
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : Align(
+                              alignment: Alignment.topCenter,
+                              child: SizedBox(
+                                width: contentWidth,
+                                child: IndexedStack(
+                                  index: _selectedTab,
+                                  children: pages,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ],
                 );
               },
             ),

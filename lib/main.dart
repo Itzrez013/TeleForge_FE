@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:teleforge_fe/app/app.dart';
 import 'package:teleforge_fe/app/theme/app_theme.dart';
+import 'package:teleforge_fe/core/network/api_client.dart';
+import 'package:teleforge_fe/core/storage/token_storage.dart';
 
 void main() {
   runApp(const TeleForgeApp());
 }
 
 class TeleForgeApp extends StatelessWidget {
-  const TeleForgeApp({super.key});
+  const TeleForgeApp({this.tokenStorage, this.apiClient, super.key});
+
+  final TokenStorage? tokenStorage;
+  final ApiClient? apiClient;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +24,10 @@ class TeleForgeApp extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: child!,
       ),
-      home: const TeleForgeShell(),
+      home: TeleForgeShell(
+        tokenStorage: tokenStorage,
+        apiClient: apiClient,
+      ),
     );
   }
 }

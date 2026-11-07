@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:teleforge_fe/app/theme/app_colors.dart';
 import 'package:teleforge_fe/features/bots/models/bot.dart';
+import 'package:teleforge_fe/core/network/api_exceptions.dart';
+import 'package:teleforge_fe/features/bots/services/bot_service.dart';
 import 'package:teleforge_fe/features/commands/models/bot_command.dart';
 import 'package:teleforge_fe/shared/widgets/app_scaffold.dart';
 
 class BotDetailScreen extends StatefulWidget {
   const BotDetailScreen({
     required this.bot,
+    required this.botService,
     required this.onBotChanged,
     required this.onAddCommand,
     required this.onOpenCommands,
@@ -14,6 +17,7 @@ class BotDetailScreen extends StatefulWidget {
   });
 
   final Bot bot;
+  final BotService botService;
   final ValueChanged<Bot> onBotChanged;
   final Future<BotCommand?> Function() onAddCommand;
   final VoidCallback onOpenCommands;
@@ -40,6 +44,26 @@ class _BotDetailScreenState extends State<BotDetailScreen> {
     widget.onBotChanged(updated);
   }
 
+  Future<void> _runAction(Future<void> Function() action) async {
+    try {
+      await action();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _syncBot() async {
+    await widget.botService.syncBot(_bot);
+    _update(_bot.copyWith(needsSync: false));
+  }
+
+  Future<void> _deactivateBot() async {
+    await widget.botService.deactivateBot(_bot);
+    _update(_bot.copyWith(isActive: false));
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = !_bot.isActive
@@ -58,19 +82,20 @@ class _BotDetailScreenState extends State<BotDetailScreen> {
         title: const Text('مدیریت ربات'),
         actions: [
           PopupMenuButton<String>(
+            enabled: _bot.isActive,
             onSelected: (value) {
               if (value == 'deactivate') {
-                _update(_bot.copyWith(isActive: !_bot.isActive));
+                _runAction(_deactivateBot);
               }
             },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'deactivate',
-                child: Text(
-                  _bot.isActive ? 'غیرفعال‌کردن ربات' : 'فعال‌کردن ربات',
-                ),
-              ),
-            ],
+            itemBuilder: (_) => _bot.isActive
+                ? [
+                    const PopupMenuItem(
+                      value: 'deactivate',
+                      child: Text('غیرفعال‌کردن ربات'),
+                    ),
+                  ]
+                : const [],
           ),
         ],
       ),
@@ -174,7 +199,7 @@ class _BotDetailScreenState extends State<BotDetailScreen> {
                 icon: Icons.sync_rounded,
                 title: 'همگام‌سازی ربات',
                 subtitle: 'ثبت دستورها و وب‌هوک در تلگرام',
-                onTap: () => _update(_bot.copyWith(needsSync: false)),
+                onTap: () => _runAction(_syncBot),
               ),
               const SizedBox(height: 10),
               _ActionTile(
@@ -185,13 +210,15 @@ class _BotDetailScreenState extends State<BotDetailScreen> {
               ),
               const SizedBox(height: 10),
               _ActionTile(
-                icon: _bot.isActive
-                    ? Icons.pause_circle_outline_rounded
-                    : Icons.play_circle_outline_rounded,
-                title: _bot.isActive ? 'غیرفعال‌کردن ربات' : 'فعال‌کردن ربات',
-                subtitle: 'تغییر وضعیت دسترسی ربات',
-                onTap: () => _update(_bot.copyWith(isActive: !_bot.isActive)),
-                color: _bot.isActive ? AppColors.orange : AppColors.green,
+                icon: Icons.pause_circle_outline_rounded,
+                title: _bot.isActive
+                    ? 'غیرفعال‌کردن ربات'
+                    : 'ربات غیرفعال است',
+                subtitle: _bot.isActive
+                    ? 'قطع اتصال ربات از تلگرام'
+                    : 'برای فعال‌سازی دوباره، ربات را همگام‌سازی کن',
+                onTap: _bot.isActive ? () => _runAction(_deactivateBot) : null,
+                color: AppColors.orange,
               ),
               const SizedBox(height: 24),
               AppSectionTitle(
@@ -327,7 +354,7 @@ class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color color;
 
   @override

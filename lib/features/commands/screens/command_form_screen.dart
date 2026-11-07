@@ -40,6 +40,8 @@ class _CommandFormScreenState extends State<CommandFormScreen> {
     Navigator.of(context).pop(
       BotCommand(
         id: existing?.id ?? 0,
+        serverId: existing?.serverId,
+        responseId: existing?.responseId,
         name: _nameController.text.trim().toLowerCase(),
         description: _descriptionController.text.trim(),
         response: _responseController.text.trim(),

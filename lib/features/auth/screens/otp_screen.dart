@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:teleforge_fe/app/theme/app_colors.dart';
+import 'package:teleforge_fe/core/network/api_exceptions.dart';
+import 'package:teleforge_fe/features/auth/services/auth_service.dart';
 import 'package:teleforge_fe/shared/widgets/app_scaffold.dart';
 
 class OtpScreen extends StatefulWidget {
-  const OtpScreen({required this.email, super.key});
+  const OtpScreen({
+    required this.email,
+    required this.authService,
+    required this.onAuthenticated,
+    super.key,
+  });
 
   final String email;
+  final AuthService authService;
+  final Future<void> Function() onAuthenticated;
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -13,6 +22,7 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   final _codeController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -20,17 +30,32 @@ class _OtpScreenState extends State<OtpScreen> {
     super.dispose();
   }
 
-  void _verify() {
+  Future<void> _verify() async {
     if (!RegExp(r'^\d{6}$').hasMatch(_codeController.text)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('کد تأیید باید ۶ رقم باشد.')),
       );
       return;
     }
+    setState(() => _isSubmitting = true);
+    try {
+      await widget.authService.verifyOtp(
+        email: widget.email,
+        code: _codeController.text,
+      );
+      await widget.onAuthenticated();
+    } on ApiException catch (error) {
+      _showError(error.message);
+    } on FormatException catch (error) {
+      _showError(error.message);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('برای تأیید واقعی کد، اتصال سرور API لازم است.'),
-      ),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -103,7 +128,7 @@ class _OtpScreenState extends State<OtpScreen> {
             PrimaryActionButton(
               label: 'تأیید و ساخت حساب',
               icon: Icons.verified_outlined,
-              onPressed: _verify,
+              onPressed: _isSubmitting ? null : _verify,
             ),
             const SizedBox(height: 16),
             TextButton(
