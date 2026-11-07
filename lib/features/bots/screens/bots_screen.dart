@@ -44,74 +44,86 @@ class BotsScreen extends StatelessWidget {
                       ),
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                    itemCount: bots.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final bot = bots[index];
-                      return AppCard(
-                        onTap: () => onOpenBot(bot),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 54,
-                              height: 54,
-                              decoration: BoxDecoration(
-                                color: AppColors.cyan.withValues(alpha: .12),
-                                borderRadius: BorderRadius.circular(17),
-                              ),
-                              child: const Icon(
-                                Icons.smart_toy_rounded,
-                                color: AppColors.cyan,
-                                size: 28,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    bot.name,
-                                    style: const TextStyle(
-                                      color: Color(0xFFF4F8FF),
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    bot.username.isEmpty
-                                        ? 'ربات تلگرام'
-                                        : bot.username,
-                                    style: const TextStyle(
-                                      color: AppColors.muted,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 9),
-                                  _StatusPill(
-                                    label: bot.needsSync
-                                        ? 'در انتظار همگام‌سازی'
-                                        : bot.isActive
-                                        ? 'فعال'
-                                        : 'غیرفعال',
-                                    color: bot.needsSync
-                                        ? AppColors.orange
-                                        : bot.isActive
-                                        ? AppColors.green
-                                        : AppColors.muted,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_left_rounded,
-                              color: AppColors.muted,
-                            ),
-                          ],
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 900 ? 2 : 1;
+                      return GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: bots.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisExtent: columns == 1 ? 132 : 148,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
                         ),
+                        itemBuilder: (context, index) {
+                          final bot = bots[index];
+                          return AppCard(
+                            onTap: () => onOpenBot(bot),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 54,
+                                  height: 54,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cyan.withValues(alpha: .12),
+                                    borderRadius: BorderRadius.circular(17),
+                                  ),
+                                  child: const Icon(
+                                    Icons.smart_toy_rounded,
+                                    color: AppColors.cyan,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        bot.name,
+                                        style: const TextStyle(
+                                          color: Color(0xFFF4F8FF),
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        bot.username.isEmpty
+                                            ? 'ربات تلگرام'
+                                            : bot.username,
+                                        style: const TextStyle(
+                                          color: AppColors.muted,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 9),
+                                      _StatusPill(
+                                        label: bot.needsSync
+                                            ? 'در انتظار همگام‌سازی'
+                                            : bot.isActive
+                                            ? 'فعال'
+                                            : 'غیرفعال',
+                                        color: bot.needsSync
+                                            ? AppColors.orange
+                                            : bot.isActive
+                                            ? AppColors.green
+                                            : AppColors.muted,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_left_rounded,
+                                  color: AppColors.muted,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

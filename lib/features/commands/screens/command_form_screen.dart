@@ -53,10 +53,12 @@ class _CommandFormScreenState extends State<CommandFormScreen> {
       appBar: AppBar(
         title: Text(widget.command == null ? 'ساخت دستور' : 'ویرایش دستور'),
       ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
+      body: AppResponsiveFrame(
+        maxWidth: 820,
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
             children: [
               AppCard(
@@ -172,6 +174,7 @@ class _CommandFormScreenState extends State<CommandFormScreen> {
                 style: TextStyle(color: AppColors.muted, fontSize: 11),
               ),
             ],
+            ),
           ),
         ),
       ),

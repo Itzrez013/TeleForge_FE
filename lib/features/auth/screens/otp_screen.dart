@@ -38,8 +38,10 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('تأیید ایمیل')),
-      body: SafeArea(
-        child: ListView(
+      body: AppResponsiveFrame(
+        maxWidth: 560,
+        child: SafeArea(
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 30, 22, 28),
           children: [
             Container(
@@ -114,6 +116,7 @@ class _OtpScreenState extends State<OtpScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

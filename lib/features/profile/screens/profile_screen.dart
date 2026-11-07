@@ -9,8 +9,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: ListView(
+    return AppResponsiveFrame(
+      maxWidth: 1040,
+      child: SafeArea(
+        child: ListView(
         padding: const EdgeInsets.only(bottom: 28),
         children: [
           const AppPageHeader(
@@ -126,6 +128,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

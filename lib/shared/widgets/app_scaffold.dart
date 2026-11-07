@@ -1,6 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:teleforge_fe/app/theme/app_colors.dart';
 
+abstract final class AppBreakpoints {
+  static const double tablet = 700;
+  static const double desktop = 1100;
+
+  static bool isTablet(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= tablet;
+
+  static bool isDesktop(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= desktop;
+}
+
+class AppResponsiveFrame extends StatelessWidget {
+  const AppResponsiveFrame({
+    required this.child,
+    this.maxWidth = 1360,
+    super.key,
+  });
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: SizedBox(width: double.infinity, child: child),
+      ),
+    );
+  }
+}
+
 class AppPageHeader extends StatelessWidget {
   const AppPageHeader({
     required this.title,
@@ -15,6 +47,7 @@ class AppPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final desktop = AppBreakpoints.isDesktop(context);
     final subtitleWidget = subtitle == null
         ? null
         : Padding(
@@ -25,7 +58,12 @@ class AppPageHeader extends StatelessWidget {
             ),
           );
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      padding: EdgeInsets.fromLTRB(
+        desktop ? 32 : 20,
+        desktop ? 30 : 20,
+        desktop ? 32 : 20,
+        desktop ? 24 : 18,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -34,9 +72,9 @@ class AppPageHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.text,
-                    fontSize: 24,
+                    fontSize: desktop ? 30 : 24,
                     fontWeight: FontWeight.w800,
                   ),
                 ),

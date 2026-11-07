@@ -56,8 +56,10 @@ class _EmailScreenState extends State<EmailScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListView(
+      body: AppResponsiveFrame(
+        maxWidth: 560,
+        child: SafeArea(
+          child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 12, 22, 30),
           children: [
             Container(
@@ -202,6 +204,7 @@ class _EmailScreenState extends State<EmailScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -37,6 +37,34 @@ void main() {
     expect(find.text('test@example.com'), findsOneWidget);
   });
 
+  testWidgets('uses navigation suited to phone, tablet, and desktop widths', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpWidget(const TeleForgeApp());
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    tester.view.physicalSize = const Size(800, 1024);
+    await tester.pumpWidget(const TeleForgeApp());
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    tester.view.physicalSize = const Size(1440, 900);
+    await tester.pumpWidget(const TeleForgeApp());
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(ListTile), findsNWidgets(4));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('can add a bot and configure its command response', (
     tester,
   ) async {

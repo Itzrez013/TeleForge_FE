@@ -39,10 +39,12 @@ class _AddBotScreenState extends State<AddBotScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('افزودن ربات')),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
+      body: AppResponsiveFrame(
+        maxWidth: 760,
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
             children: [
               Container(
@@ -171,6 +173,7 @@ class _AddBotScreenState extends State<AddBotScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

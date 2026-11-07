@@ -101,84 +101,97 @@ class _CommandsScreenState extends State<CommandsScreen> {
                       ),
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                    itemCount: commands.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 11),
-                    itemBuilder: (context, index) {
-                      final command = commands[index];
-                      return AppCard(
-                        onTap: () => widget.onEditCommand(selectedBot, command),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: AppColors.cyan.withValues(alpha: .12),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(
-                                Icons.terminal_rounded,
-                                color: AppColors.cyan,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    command.name,
-                                    textDirection: TextDirection.ltr,
-                                    style: const TextStyle(
-                                      color: AppColors.text,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final columns = constraints.maxWidth >= 900 ? 2 : 1;
+                      return GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        itemCount: commands.length,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: columns,
+                          mainAxisExtent: columns == 1 ? 136 : 154,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemBuilder: (context, index) {
+                          final command = commands[index];
+                          return AppCard(
+                            onTap: () =>
+                                widget.onEditCommand(selectedBot, command),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cyan.withValues(alpha: .12),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    command.description,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppColors.muted,
-                                      fontSize: 12,
-                                    ),
+                                  child: const Icon(
+                                    Icons.terminal_rounded,
+                                    color: AppColors.cyan,
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(
-                                        Icons.chat_bubble_outline_rounded,
-                                        color: AppColors.green,
-                                        size: 13,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Expanded(
-                                        child: Text(
-                                          command.response.isEmpty
-                                              ? 'بدون پاسخ'
-                                              : command.response,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            color: AppColors.muted,
-                                            fontSize: 11,
-                                          ),
+                                      Text(
+                                        command.name,
+                                        textDirection: TextDirection.ltr,
+                                        style: const TextStyle(
+                                          color: AppColors.text,
+                                          fontWeight: FontWeight.bold,
                                         ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        command.description,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.muted,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.chat_bubble_outline_rounded,
+                                            color: AppColors.green,
+                                            size: 13,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Expanded(
+                                            child: Text(
+                                              command.response.isEmpty
+                                                  ? 'بدون پاسخ'
+                                                  : command.response,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: AppColors.muted,
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_left_rounded,
+                                  color: AppColors.muted,
+                                ),
+                              ],
                             ),
-                            const Icon(
-                              Icons.chevron_left_rounded,
-                              color: AppColors.muted,
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
                   ),

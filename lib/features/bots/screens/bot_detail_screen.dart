@@ -74,191 +74,195 @@ class _BotDetailScreenState extends State<BotDetailScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
-          children: [
-            AppCard(
-              padding: const EdgeInsets.all(21),
-              gradient: const LinearGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                colors: [Color(0xFF123B68), Color(0xFF101827)],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 76,
-                    height: 76,
-                    decoration: BoxDecoration(
-                      color: AppColors.cyan.withValues(alpha: .14),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Icon(
-                      Icons.smart_toy_rounded,
-                      color: AppColors.cyan,
-                      size: 40,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  Text(
-                    _bot.name,
-                    style: const TextStyle(
-                      color: AppColors.text,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _bot.username.isEmpty ? 'ربات تلگرام' : _bot.username,
-                    style: const TextStyle(color: AppColors.muted),
-                  ),
-                  const SizedBox(height: 14),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
+      body: AppResponsiveFrame(
+        maxWidth: 1080,
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
+            children: [
+              AppCard(
+                padding: const EdgeInsets.all(21),
+                gradient: const LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [Color(0xFF123B68), Color(0xFF101827)],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        color: AppColors.cyan.withValues(alpha: .14),
+                        borderRadius: BorderRadius.circular(24),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.circle, size: 8, color: statusColor),
-                          const SizedBox(width: 7),
-                          Text(
-                            statusLabel,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                      child: const Icon(
+                        Icons.smart_toy_rounded,
+                        color: AppColors.cyan,
+                        size: 40,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 21),
-            Row(
-              children: [
-                Expanded(
-                  child: _InfoTile(
-                    icon: Icons.terminal_rounded,
-                    value: '${_bot.commands.length}',
-                    label: 'دستور',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _InfoTile(
-                    icon: Icons.sync_rounded,
-                    value: _bot.needsSync ? 'در انتظار' : 'به‌روز',
-                    label: 'وضعیت اتصال',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 25),
-            AppSectionTitle('ابزارهای ربات'),
-            const SizedBox(height: 12),
-            _ActionTile(
-              icon: Icons.sync_rounded,
-              title: 'همگام‌سازی ربات',
-              subtitle: 'ثبت دستورها و وب‌هوک در تلگرام',
-              onTap: () => _update(_bot.copyWith(needsSync: false)),
-            ),
-            const SizedBox(height: 10),
-            _ActionTile(
-              icon: Icons.terminal_rounded,
-              title: 'مدیریت دستورها',
-              subtitle: 'ساخت پاسخ خودکار برای دستورها',
-              onTap: widget.onOpenCommands,
-            ),
-            const SizedBox(height: 10),
-            _ActionTile(
-              icon: _bot.isActive
-                  ? Icons.pause_circle_outline_rounded
-                  : Icons.play_circle_outline_rounded,
-              title: _bot.isActive ? 'غیرفعال‌کردن ربات' : 'فعال‌کردن ربات',
-              subtitle: 'تغییر وضعیت دسترسی ربات',
-              onTap: () => _update(_bot.copyWith(isActive: !_bot.isActive)),
-              color: _bot.isActive ? AppColors.orange : AppColors.green,
-            ),
-            const SizedBox(height: 24),
-            AppSectionTitle(
-              'دستورهای اخیر',
-              trailing: TextButton(
-                onPressed: widget.onOpenCommands,
-                child: const Text('مشاهده همه'),
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (_bot.commands.isEmpty)
-              EmptyStateCard(
-                icon: Icons.terminal_rounded,
-                title: 'هنوز دستوری نساخته‌ای',
-                message: 'برای پاسخ‌گویی خودکار، اولین دستور این ربات را بساز.',
-                actionLabel: 'ساخت دستور',
-                onAction: _addCommand,
-              )
-            else
-              ..._bot.commands
-                  .take(3)
-                  .map(
-                    (command) => Padding(
-                      padding: const EdgeInsets.only(bottom: 9),
-                      child: AppCard(
+                    const SizedBox(height: 15),
+                    Text(
+                      _bot.name,
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _bot.username.isEmpty ? 'ربات تلگرام' : _bot.username,
+                      style: const TextStyle(color: AppColors.muted),
+                    ),
+                    const SizedBox(height: 14),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.code_rounded,
-                              color: AppColors.cyan,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    command.name,
-                                    textDirection: TextDirection.ltr,
-                                    style: const TextStyle(
-                                      color: AppColors.text,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    command.description,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AppColors.muted,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                            Icon(Icons.circle, size: 8, color: statusColor),
+                            const SizedBox(width: 7),
+                            Text(
+                              statusLabel,
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 21),
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoTile(
+                      icon: Icons.terminal_rounded,
+                      value: '${_bot.commands.length}',
+                      label: 'دستور',
+                    ),
                   ),
-            const SizedBox(height: 16),
-            const Text(
-              'پیش‌نمایش تعاملی؛ تغییرات در سرور ذخیره نمی‌شوند.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.muted, fontSize: 11),
-            ),
-          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _InfoTile(
+                      icon: Icons.sync_rounded,
+                      value: _bot.needsSync ? 'در انتظار' : 'به‌روز',
+                      label: 'وضعیت اتصال',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 25),
+              AppSectionTitle('ابزارهای ربات'),
+              const SizedBox(height: 12),
+              _ActionTile(
+                icon: Icons.sync_rounded,
+                title: 'همگام‌سازی ربات',
+                subtitle: 'ثبت دستورها و وب‌هوک در تلگرام',
+                onTap: () => _update(_bot.copyWith(needsSync: false)),
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: Icons.terminal_rounded,
+                title: 'مدیریت دستورها',
+                subtitle: 'ساخت پاسخ خودکار برای دستورها',
+                onTap: widget.onOpenCommands,
+              ),
+              const SizedBox(height: 10),
+              _ActionTile(
+                icon: _bot.isActive
+                    ? Icons.pause_circle_outline_rounded
+                    : Icons.play_circle_outline_rounded,
+                title: _bot.isActive ? 'غیرفعال‌کردن ربات' : 'فعال‌کردن ربات',
+                subtitle: 'تغییر وضعیت دسترسی ربات',
+                onTap: () => _update(_bot.copyWith(isActive: !_bot.isActive)),
+                color: _bot.isActive ? AppColors.orange : AppColors.green,
+              ),
+              const SizedBox(height: 24),
+              AppSectionTitle(
+                'دستورهای اخیر',
+                trailing: TextButton(
+                  onPressed: widget.onOpenCommands,
+                  child: const Text('مشاهده همه'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_bot.commands.isEmpty)
+                EmptyStateCard(
+                  icon: Icons.terminal_rounded,
+                  title: 'هنوز دستوری نساخته‌ای',
+                  message:
+                      'برای پاسخ‌گویی خودکار، اولین دستور این ربات را بساز.',
+                  actionLabel: 'ساخت دستور',
+                  onAction: _addCommand,
+                )
+              else
+                ..._bot.commands
+                    .take(3)
+                    .map(
+                      (command) => Padding(
+                        padding: const EdgeInsets.only(bottom: 9),
+                        child: AppCard(
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.code_rounded,
+                                color: AppColors.cyan,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      command.name,
+                                      textDirection: TextDirection.ltr,
+                                      style: const TextStyle(
+                                        color: AppColors.text,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      command.description,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: AppColors.muted,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+              const SizedBox(height: 16),
+              const Text(
+                'پیش‌نمایش تعاملی؛ تغییرات در سرور ذخیره نمی‌شوند.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.muted, fontSize: 11),
+              ),
+            ],
+          ),
         ),
       ),
     );
