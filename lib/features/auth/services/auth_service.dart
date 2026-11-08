@@ -1,12 +1,10 @@
 import 'package:teleforge_fe/core/config/api_config.dart';
 import 'package:teleforge_fe/core/network/api_client.dart';
+import 'package:teleforge_fe/core/network/api_exceptions.dart';
 import 'package:teleforge_fe/core/storage/token_storage.dart';
 
 class AuthService {
-  const AuthService({
-    required this._apiClient,
-    required this._tokenStorage,
-  });
+  const AuthService({required this._apiClient, required this._tokenStorage});
 
   final ApiClient _apiClient;
   final TokenStorage _tokenStorage;
@@ -19,37 +17,36 @@ class AuthService {
     await _apiClient.post(
       ApiConfig.register,
       authenticated: false,
-      body: {
-        'full_name': fullName,
-        'email': email,
-        'password': password,
-      },
+      body: {'full_name': fullName, 'email': email, 'password': password},
     );
   }
 
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     final response = await _apiClient.post(
       ApiConfig.login,
       authenticated: false,
       body: {'email': email, 'password': password},
     );
-    return _storeSessionIfPresent(response);
+    if (await _storeSessionIfPresent(response)) return true;
+
+    await _tokenStorage.clear();
+    if (response['verification_required'] == true) return false;
+
+    throw const ApiException(
+      'The login response contained neither a session nor a verification requirement.',
+    );
   }
 
-  Future<void> verifyOtp({
-    required String email,
-    required String code,
-  }) async {
+  Future<void> verifyOtp({required String email, required String code}) async {
     final response = await _apiClient.post(
       ApiConfig.verifyOtp,
       authenticated: false,
       body: {'email': email, 'code': int.parse(code)},
     );
     if (!await _storeSessionIfPresent(response)) {
-      throw const FormatException('OTP verification returned no session.');
+      throw const ApiException(
+        'OTP verification did not return valid session tokens.',
+      );
     }
   }
 
@@ -72,7 +69,12 @@ class AuthService {
   Future<bool> _storeSessionIfPresent(Map<String, dynamic> response) async {
     final access = response['access'];
     final refresh = response['refresh'];
-    if (access is! String || refresh is! String) return false;
+    if (access is! String ||
+        access.isEmpty ||
+        refresh is! String ||
+        refresh.isEmpty) {
+      return false;
+    }
     await _tokenStorage.saveTokens(access: access, refresh: refresh);
     return true;
   }

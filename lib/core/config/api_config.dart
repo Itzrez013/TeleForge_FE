@@ -1,7 +1,7 @@
 abstract final class ApiConfig {
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000',
+    defaultValue: 'https://api.teleforge.ir',
   );
 
   static const register = 'register/';
@@ -9,7 +9,7 @@ abstract final class ApiConfig {
   static const login = 'login/';
   static const logout = 'logout/';
   static const refresh = 'token/refresh/';
-  static const dashboard = 'Dashboaed/';
+  static const dashboard = 'dashboard/';
   static const addBot = 'get-token/';
 
   static String bot(int botId) => 'bots/$botId/';

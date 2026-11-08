@@ -41,7 +41,7 @@ void main() {
     expect(find.text('test@example.com'), findsOneWidget);
     expect(backend.paths, contains('/register/'));
     expect(backend.paths, contains('/register/otp/'));
-    expect(backend.paths, contains('/Dashboaed/'));
+    expect(backend.paths, contains('/dashboard/'));
   });
 
   testWidgets('uses navigation suited to phone, tablet, and desktop widths', (
@@ -182,7 +182,7 @@ class _FakeBackend {
       case 'POST /register/otp/':
       case 'POST /login/':
         return _json({'access': 'access-token', 'refresh': 'refresh-token'});
-      case 'GET /Dashboaed/':
+      case 'GET /dashboard/':
         return _json({
           'profile': {'email': 'test@example.com', 'full_name': 'Test User'},
           'user_bot_list': _botAdded ? [_botJson] : [],

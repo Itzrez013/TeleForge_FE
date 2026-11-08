@@ -2,24 +2,23 @@
 
 ## API configuration
 
-All requests use `API_BASE_URL`. The default is `http://127.0.0.1:8000` for a
-Flutter app running on the same machine as Django. Override it at build/run
-time without changing source:
+All requests use `API_BASE_URL`. The production default is
+`https://api.teleforge.ir`. Override it at build/run time without changing
+source:
 
 ```powershell
 flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8000
-flutter build web --dart-define=API_BASE_URL=https://api.example.com
-flutter build apk --dart-define=API_BASE_URL=https://api.example.com
+flutter build web
+flutter build apk
 ```
 
-`0.0.0.0` is the address Django binds to; it is not a usable destination for a
-client. Use `127.0.0.1` on the same computer, `10.0.2.2` from the Android
-emulator, or the computer's LAN IP from a physical device. Release builds
-should use HTTPS. Android permits cleartext HTTP only in debug builds.
+For local development, use `127.0.0.1` on the same computer, `10.0.2.2` from
+the Android emulator, or the computer's LAN IP from a physical device.
+`0.0.0.0` is a bind address, not a client destination. Production builds must
+use HTTPS.
 
 Flutter Web also requires the app's origin to be allowed by Django CORS
-settings. Add the exact web origin used to test/deploy the frontend to
-`CORS_ALLOWED_ORIGINS`.
+settings. The backend currently allows `https://teleforge.ir`.
 
 ## Backend endpoints used
 
@@ -32,7 +31,7 @@ The client uses the DRF routes in `Itzrez013/TeleForge`:
 | Log in | `POST /login/` (`email`, `password`) |
 | Refresh rotating JWTs | `POST /token/refresh/` |
 | Log out | `POST /logout/` |
-| Profile and bot list | `GET /Dashboaed/` |
+| Profile and bot list | `GET /dashboard/` |
 | Add bot by Telegram token | `POST /get-token/` |
 | Bot details and commands | `GET/PATCH/DELETE /bots/{bot_id}/` |
 | Sync/deactivate bot | `POST /bots/{bot_id}/sync/`, `/deactivate/` |
@@ -44,24 +43,27 @@ The client uses the DRF routes in `Itzrez013/TeleForge`:
 Access/refresh tokens are stored using platform secure storage. Expired access
 tokens are refreshed once and the rotated tokens are persisted.
 
-## Backend contract items to fix
+## Production readiness
 
-The current backend source prevents the bot and command screens from working
-end-to-end until its serializers/models expose the identifiers expected by
-the routes:
+The frontend is configured for the production API. End-to-end use still
+depends on the backend deployment and response contract:
 
-- `TelegramBotSerializer` declares `is_acrive`, which is not a field on
-  `TelegramBot`; the model also has no `is_active` although
-  `UpdateBotSerializer` uses it.
-- Bot responses need to include the Django primary key as `id` (distinct from
-  Telegram's `bot_id`), because bot detail routes accept the database key.
-  Include `is_active` and `needs_sync` as well; the model currently does not
-  define `is_active`, while `needs_sync` is omitted from its serializer.
-- Command and command-response serializers need to include their primary key
-  as `id`; the client needs those IDs for edit/delete and response routes.
-- The dashboard path is spelled `Dashboaed/` in the backend. The client uses
-  that exact spelling.
+- Bot responses need the Django primary key as `id` (separate from Telegram's
+  `bot_id`) because detail routes use the database key. Include `needs_sync`
+  so the UI can display the actual Telegram sync status.
+- The bot model currently has no `is_active` field, and
+  `UpdateBotSerializer` only accepts `name`. Add/persist a bot active-state
+  field in the backend if the UI should display and update that state.
+- Command and response serializers need their database primary keys as `id`.
+  The frontend uses these IDs to load, edit, and delete commands and responses.
+- The current dashboard serializer doesn't return bot `id`, so a user with
+  bots cannot load bot details until that response is corrected.
+- The API currently answers HTTPS requests such as `/dashboard/` with a
+  redirect to the same URL. Configure the reverse proxy to forward
+  `X-Forwarded-Proto: https` and enable the backend's `USE_X_FORWARDED_PROTO`
+  setting so Django does not loop on `SECURE_SSL_REDIRECT`.
 
-The client reports API errors rather than treating failed requests as local
-success. After updating the backend contract, run `flutter analyze` and
-`flutter test`.
+Once those backend items are deployed, the client reports API errors rather
+than treating failed requests as local success. Validate production login,
+email verification, bot registration, command creation, and Telegram sync
+against the live service before release.
