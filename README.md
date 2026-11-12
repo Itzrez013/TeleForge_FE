@@ -3,7 +3,7 @@
 ## API configuration
 
 All requests use `API_BASE_URL`. The production default is
-`https://api.teleforge.ir`. Override it at build/run time without changing
+`https://api.teleforge.ir/`. Override it at build/run time without changing
 source:
 
 ```powershell

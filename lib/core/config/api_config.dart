@@ -1,7 +1,7 @@
 abstract final class ApiConfig {
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.teleforge.ir',
+    defaultValue: 'https://api.teleforge.ir/',
   );
 
   static const register = 'register/';

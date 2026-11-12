@@ -11,7 +11,7 @@ import 'package:teleforge_fe/features/auth/services/auth_service.dart';
 
 void main() {
   test('uses the production API and dashboard endpoints by default', () {
-    expect(ApiConfig.baseUrl, 'https://api.teleforge.ir');
+    expect(ApiConfig.baseUrl, 'https://api.teleforge.ir/');
     expect(ApiConfig.dashboard, 'dashboard/');
   });
 
